@@ -48,6 +48,9 @@
         document.getElementById("album-cover").style.minWidth = `${imageSize}px`;
         document.getElementById("album-cover").style.height = `${imageSize}px`;
         document.body.style.height = `${imageSize}px`;
+        const fetchedArtSize = 250;
+        if (imageSize > 250) fetchedArtSize = 500;
+        if (imageSize > 500) fetchedArtSize = 1200;
         const albumArtShown = urlParams.get("hideAlbumArt") !== "true";
         if (!albumArtShown) document.getElementById("album-cover").style.display = "none";
         const infoAreaWidth = urlParams.get("infoAreaWidth") || 500;
@@ -98,7 +101,7 @@
             const data = await response.json();
             const fetchedAlbumGroupId = data["release-groups"][0].id;
             if (!fetchedAlbumGroupId || song !== lastSong) return;
-            document.getElementById("album-cover").src = `https://coverartarchive.org/release-group/${fetchedAlbumGroupId}/front`;
+            document.getElementById("album-cover").src = `https://coverartarchive.org/release-group/${fetchedAlbumGroupId}/front-${fetchedArtSize}`;
         }
         updateSong();
         setInterval(updateSong, (refreshInterval) * 1000);
