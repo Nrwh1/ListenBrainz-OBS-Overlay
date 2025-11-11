@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            gap: 10px;
+            font-weight: bold;
+            margin: 0;
+            width: fit-content;
+        }
+        #album-cover {
+            border: none;
+        }
+        #info-area {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly
+        }
+        #info-area span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-shadow: 3px 3px black;
+        }
+    </style>
+    <title>ListenBrainz OBS Overlay</title>
+</head>
+<body>
+    <img src="" id="album-cover">
+    <div id="info-area">
+        <span id="song-name"></span>
+        <span id="artist-name">Loading...</span>
+        <span id="album-name"></span>
+    </div>
+    <script>
+        // Set settings based on URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const opacity = urlParams.get("opacity") || 1;
+        document.body.style.opacity = opacity;
+        const imageSize = urlParams.get("imageSize") || 200;
+        document.getElementById("album-cover").style.minWidth = `${imageSize}px`;
+        document.getElementById("album-cover").style.height = `${imageSize}px`;
+        document.body.style.height = `${imageSize}px`;
+        const albumArtShown = urlParams.get("hideAlbumArt") !== "true";
+        if (!albumArtShown) document.getElementById("album-cover").style.display = "none";
+        const infoAreaWidth = urlParams.get("infoAreaWidth") || 500;
+        document.getElementById("info-area").style.width = `${infoAreaWidth}px`;
+        const fontSize = urlParams.get("fontSize") || 35;
+        document.body.style.fontSize = `${fontSize}px`;
+        const refreshInterval = urlParams.get("refreshInterval") || 2;
+        const username = urlParams.get("username");
+        if (!username) {
+            document.getElementById('artist-name').innerText = "No username provided";
+            throw new Error("No username provided");
+        }
+        // Fetch song data and update the UI
+        let lastSong;
+        function updateSong() {
+            fetch(`https://api.listenbrainz.org/1/user/${username}/playing-now`)
+                .then(response => response.json())
+                .then(data => {
+                    const listens = data.payload.listens
+                    if (listens.length === 0) {
+                        if (lastSong !== null) {
+                            lastSong = null;
+                            document.getElementById("album-cover").src = "";
+                            document.getElementById("song-name").innerText = "";
+                            document.getElementById("artist-name").innerText = "No song playing";
+                            document.getElementById("album-name").innerText = "";
+                        }
+                        return;
+                    }
+                    const song = listens[0].track_metadata;
+                    if (!lastSong ||
+                        lastSong.track_name !== song.track_name ||
+                        lastSong.artist_name !== song.artist_name ||
+                        lastSong.release_name !== song.release_name) {
+                        lastSong = song;
+                        document.getElementById("song-name").innerText = song.track_name;
+                        document.getElementById("artist-name").innerText = song.artist_name;
+                        document.getElementById("album-name").innerText = song.release_name;
+                        if (albumArtShown) {
+                            document.getElementById("album-cover").src = "";
+                            setAlbumArt(song);
+                        }
+                    }
+                });
+        }
+        async function setAlbumArt(song) {
+            const response = await fetch(`https://musicbrainz.org/ws/2/release-group?query=artistname:${song.artist_name} AND release:${song.release_name}&fmt=json&limit=1`);
+            const data = await response.json();
+            const fetchedAlbumGroupId = data["release-groups"][0].id;
+            if (!fetchedAlbumGroupId || song !== lastSong) return;
+            document.getElementById("album-cover").src = `https://coverartarchive.org/release-group/${fetchedAlbumGroupId}/front`;
+        }
+        updateSong();
+        setInterval(updateSong, (refreshInterval) * 1000);
+    </script>
+</body>
+</html>
