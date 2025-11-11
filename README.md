@@ -17,3 +17,6 @@
     - `fontSize`: Font size of the info area. Default is `35`.
     - `refreshInterval`: How often the song data is refreshed in seconds. Default is `2`.
     - `hideAlbumArt`: Whether to hide the album art. Default is `false`.
+
+## Screenshot
+![Screenshot](https://raw.githubusercontent.com/Nrwh1/ListenBrainz-OBS-Overlay/refs/heads/main/screenshot.png)
